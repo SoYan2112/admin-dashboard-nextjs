@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
+import { UserActions } from "@/components/user-actions";
 const users = [
   { id: 1, name: "Minh Nhat", email: "MinhNhat123@gmail.com", role: "ADMIN" },
   { id: 2, name: "Hoang Nhat", email: "HoangNhat123@gmail.com", role: "USER" },
@@ -35,6 +35,9 @@ export default function UsersPage() {
               <TableCell>{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>{user.role}</TableCell>
+              <TableCell>
+                <UserActions userId={user.id} />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
