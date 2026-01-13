@@ -20,7 +20,13 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 
-export function UserActions({ userId }: { userId: number }) {
+export function UserActions({
+  onEdit,
+  onDelete,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -28,12 +34,12 @@ export function UserActions({ userId }: { userId: number }) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
-            <MoreHorizontal size={500} />
+            <MoreHorizontal size={18} />
           </Button>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
+          <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
           <DropdownMenuItem
             className="text-red-600"
             onClick={() => setOpen(true)}

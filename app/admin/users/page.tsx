@@ -1,3 +1,4 @@
+"use client";
 import {
   Table,
   TableBody,
@@ -7,13 +8,34 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserActions } from "@/components/user-actions";
-const users = [
+import { useState } from "react";
+import { EditUser, User } from "@/components/EditUser";
+
+const users: User[] = [
   { id: 1, name: "Minh Nhat", email: "MinhNhat123@gmail.com", role: "ADMIN" },
   { id: 2, name: "Hoang Nhat", email: "HoangNhat123@gmail.com", role: "USER" },
   { id: 3, name: "Duy Nhat", email: "DuyNhat123@gmail.com", role: "USER" },
 ];
 
 export default function UsersPage() {
+  const [usersState, setUsersState] = useState<User[]>(users);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  const handleDelete = (id: number) => {
+    setUsersState((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  const handleEdit = (userId: number) => {
+    console.log("Edit user:", userId);
+  };
+
+  const handleSave = (updateUser: User) => {
+    setUsersState((prev) =>
+      prev.map((u) => (u.id === updateUser.id ? updateUser : u))
+    );
+    setEditingUser(null);
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Users</h1>
@@ -29,19 +51,33 @@ export default function UsersPage() {
         </TableHeader>
 
         <TableBody>
-          {users.map((user) => (
+          {usersState.map((user) => (
             <TableRow key={user.id} className="text-gray-600">
               <TableCell>{user.id}</TableCell>
               <TableCell>{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>{user.role}</TableCell>
               <TableCell>
-                <UserActions userId={user.id} />
+                <UserActions
+                  onEdit={() => setEditingUser(user)}
+                  onDelete={() =>
+                    setUsersState((prev) =>
+                      prev.filter((u) => u.id !== user.id)
+                    )
+                  }
+                />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <EditUser
+        open={!!editingUser}
+        users={editingUser}
+        onClose={() => setEditingUser(null)}
+        onSave={handleSave}
+      />
     </div>
   );
 }
