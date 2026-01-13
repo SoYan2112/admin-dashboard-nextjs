@@ -10,17 +10,24 @@ import {
 import { UserActions } from "@/components/user-actions";
 import { useState } from "react";
 import { EditUser, User } from "@/components/EditUser";
+import { Input } from "@/components/ui/input";
 
 const users: User[] = [
   { id: 1, name: "Minh Nhat", email: "MinhNhat123@gmail.com", role: "ADMIN" },
   { id: 2, name: "Hoang Nhat", email: "HoangNhat123@gmail.com", role: "USER" },
   { id: 3, name: "Duy Nhat", email: "DuyNhat123@gmail.com", role: "USER" },
+ 
 ];
 
 export default function UsersPage() {
   const [usersState, setUsersState] = useState<User[]>(users);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-
+  const [search, setSearch] = useState("");
+  const filteredUsers = usersState.filter(
+    (u) =>
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase())
+  );
   const handleDelete = (id: number) => {
     setUsersState((prev) => prev.filter((u) => u.id !== id));
   };
@@ -40,6 +47,13 @@ export default function UsersPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Users</h1>
 
+      <Input
+        placeholder="Search by name or email..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -51,7 +65,7 @@ export default function UsersPage() {
         </TableHeader>
 
         <TableBody>
-          {usersState.map((user) => (
+          {filteredUsers.map((user) => (
             <TableRow key={user.id} className="text-gray-600">
               <TableCell>{user.id}</TableCell>
               <TableCell>{user.name}</TableCell>
