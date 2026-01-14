@@ -8,11 +8,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserActions } from "@/components/user-actions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EditUser, User } from "@/components/EditUser";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
+import { UserSkeleton } from "./user-skeleton";
+import { getUsers, updateUser, deleteUser } from "@/lib/api";
 const users: User[] = [
   { id: 1, name: "Nguyen Van An", email: "an.nguyen@company.com", role: "ADMIN" },
   { id: 2, name: "Tran Thi Binh", email: "binh.tran@company.com", role: "USER" },
@@ -28,11 +29,43 @@ const users: User[] = [
 
 
 export default function UsersPage() {
-  const [usersState, setUsersState] = useState<User[]>(users);
+  const [usersState, setUsersState] = useState<User[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 5;
+
+  useEffect(() => {
+    setLoading(true);
+    const timer = setTimeout(() => {
+      setUsersState(users);
+      setLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const data = await getUsers();
+        setUsersState(
+          data.map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            role: "USER",
+          }))
+        ); 
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUsers();
+  }, []);
+
+  
   const filteredUsers = usersState.filter(
     (u) =>
       u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -61,7 +94,8 @@ export default function UsersPage() {
     (page - 1) * pageSize,
     page * pageSize
   );
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
+    await deleteUser(id);
     setUsersState((prev) => prev.filter((u) => u.id !== id));
   };
 
@@ -69,9 +103,10 @@ export default function UsersPage() {
     console.log("Edit user:", userId);
   };
 
-  const handleSave = (updateUser: User) => {
+  const handleSave = async (user: User) => {
+    await updateUser(user);
     setUsersState((prev) =>
-      prev.map((u) => (u.id === updateUser.id ? updateUser : u))
+      prev.map((u) => (u.id === user.id ? user : u))
     );
     setEditingUser(null);
   };
@@ -79,14 +114,17 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Users</h1>
-
+      <UserSkeleton />
+      
       <Input
         placeholder="Search by name or email..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="max-w-sm"
       />
-
+      {paginatedUsers.length === 0 && (<div className="text-center text-gray-500 py-10">
+        No users found
+         </div> )}
       <Table>
         <TableHeader>
           <TableRow>
@@ -126,6 +164,7 @@ export default function UsersPage() {
           ))}
         </TableBody>
       </Table>
+
 
       <div className="flex items-center gap-2 justify-end">
         <Button
