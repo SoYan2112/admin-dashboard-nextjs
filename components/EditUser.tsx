@@ -20,29 +20,29 @@ export type User = {
 
 type Props = {
   open: boolean;
+  users: User | null;
   onClose: () => void;
-  user: User;
-  onSave: (user: User) => void;
+  onSave: (user: User) => Promise<void>;
 };
 
-export function EditUser({ open, onClose, user, onSave }: Props) {
+export function EditUser({ open, onClose, users, onSave }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
   useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setEmail(user.email);
+    if (users) {
+      setName(users.name);
+      setEmail(users.email);
     }
-  }, [user]);
+  }, [users]);
 
-  if (!user) return null;
+  if (!users) return null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
+          <DialogTitle>Edit users</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -62,7 +62,7 @@ export function EditUser({ open, onClose, user, onSave }: Props) {
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={() => onSave({ ...user, name, email })}>Save</Button>
+          <Button onClick={() => onSave({ ...users, name, email })}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
