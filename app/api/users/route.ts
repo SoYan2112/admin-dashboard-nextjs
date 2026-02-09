@@ -6,7 +6,7 @@ import { users } from "@/lib/db/schema";
 const createUserSchema = z.object({
   name: z.string().min(3),
   email: z.string().email(),
-  // role: z.string().min(1),
+  role: z.string().min(1),
 });
 
 // get users data from DB

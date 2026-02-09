@@ -60,7 +60,7 @@ export function UserActions({
 
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600">Delete</AlertDialogAction>
+            <AlertDialogAction className="bg-red-600" onClick={onDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

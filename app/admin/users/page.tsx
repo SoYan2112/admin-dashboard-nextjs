@@ -24,7 +24,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 5;
-  const [sortField, setSortField] = useState<"name" | "role" | null>(null);
+  const [sortField, setSortField] = useState<"name" | "isAdmin" | null>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // fetch db
@@ -71,22 +71,22 @@ export default function UsersPage() {
   // actions
   // delete
   const handleDelete = async (id: number) => {
-    if (confirm("Are you sure?")) {
+        
       await deleteUser(id);
       setUsersState((prev) => prev.filter((u) => u.id !== id));
-    }
+    
   };
   //save
   const handleSave = async (updatedUser: User) => {
     try {
       await updateUser(updatedUser);
       setUsersState((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
       );
       setEditingUser(null);
     } catch (error) {
       console.error("Update failed:", error);
-      alert("Không thể cập nhật user!");
+      alert("Can not update user!");
     }
   };
 
@@ -124,8 +124,16 @@ export default function UsersPage() {
             >
               Name {sortField === "name" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
             </TableHead>
+            
             <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
+            <TableHead 
+                className="cursor-pointer"
+                onClick={() => {
+                    setSortField("isAdmin");
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                }}
+            >Role {sortField === "isAdmin" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
+            </TableHead>
           </TableRow>
         </TableHeader>
 
@@ -136,7 +144,11 @@ export default function UsersPage() {
               <TableCell>{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>
-                <span>{user.role || "USER"}</span>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs ${user.isAdmin ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
+                >
+                  {user.isAdmin === true ? "Admin" : "User"}
+                </span>
               </TableCell>
               <TableCell>
                 <UserActions
@@ -149,7 +161,7 @@ export default function UsersPage() {
         </TableBody>
       </Table>
 
-          {/* page */}
+      {/* page */}
       <div className="flex items-center gap-2 justify-end">
         <Button
           variant="outline"

@@ -15,7 +15,7 @@ export type User = {
   id: number;
   name: string;
   email: string;
-  role: string;
+  isAdmin: boolean;
 };
 
 type Props = {
