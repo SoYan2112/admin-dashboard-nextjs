@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -8,123 +9,108 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserActions } from "@/components/user-actions";
-import { useEffect, useState } from "react";
-import { EditUser, User } from "@/components/EditUser";
+import { EditUser, type User } from "@/components/EditUser";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserSkeleton } from "./user-skeleton";
 import { getUsers, updateUser, deleteUser } from "@/lib/api";
-const users: User[] = [
-  { id: 1, name: "Nguyen Van An", email: "an.nguyen@company.com", role: "ADMIN" },
-  { id: 2, name: "Tran Thi Binh", email: "binh.tran@company.com", role: "USER" },
-  { id: 3, name: "Le Quoc Cuong", email: "cuong.le@company.com", role: "USER" },
-  { id: 4, name: "Pham Minh Duc", email: "duc.pham@company.com", role: "MODERATOR" },
-  { id: 5, name: "Vo Thi Hoa", email: "hoa.vo@company.com", role: "USER" },
-  { id: 6, name: "Dang Thanh Khoa", email: "khoa.dang@company.com", role: "USER" },
-  { id: 7, name: "Bui Anh Tuan", email: "tuan.bui@company.com", role: "USER" },
-  { id: 8, name: "Do Ngoc Linh", email: "linh.do@company.com", role: "ADMIN" },
-  { id: 9, name: "Hoang Gia Bao", email: "bao.hoang@company.com", role: "USER" },
-  { id: 10, name: "Mai Phuong Thao", email: "thao.mai@company.com", role: "USER" },
-];
-
 
 export default function UsersPage() {
   const [usersState, setUsersState] = useState<User[]>([]);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // State search, sort, page
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 5;
+  const [sortField, setSortField] = useState<"name" | "role" | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setUsersState(users);
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
+  // fetch db
   useEffect(() => {
     async function loadUsers() {
+      setLoading(true);
       try {
         const data = await getUsers();
-        setUsersState(
-          data.map((u: any) => ({
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            role: "USER",
-          }))
-        ); 
+        setUsersState(data);
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
       } finally {
         setLoading(false);
       }
     }
-
     loadUsers();
   }, []);
 
-  
+  // filter & sort
   const filteredUsers = usersState.filter(
     (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
+      u.name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.email?.toLowerCase().includes(search.toLowerCase()),
   );
-  type SortField = "name" | "role" | null;
-  type SortOrder = "asc" | "desc";
-
-  const [sortField, setSortField] = useState<SortField>(null);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   const sortedUsers = [...filteredUsers].sort((a, b) => {
     if (!sortField) return 0;
 
-    const valueA = a[sortField].toString();
-    const valueB = b[sortField].toString();
+    const valA = String(a[sortField] || "");
+    const valB = String(b[sortField] || "");
 
     return sortOrder === "asc"
-      ? valueA.localeCompare(valueB)
-      : valueB.localeCompare(valueA);
+      ? valA.localeCompare(valB)
+      : valB.localeCompare(valA);
   });
 
-  const totalPage = Math.ceil(filteredUsers.length / pageSize);
-
+  // page
+  const totalPage = Math.ceil(filteredUsers.length / pageSize) || 1;
   const paginatedUsers = sortedUsers.slice(
     (page - 1) * pageSize,
-    page * pageSize
+    page * pageSize,
   );
+
+  // actions
+  // delete
   const handleDelete = async (id: number) => {
-    await deleteUser(id);
-    setUsersState((prev) => prev.filter((u) => u.id !== id));
+    if (confirm("Are you sure?")) {
+      await deleteUser(id);
+      setUsersState((prev) => prev.filter((u) => u.id !== id));
+    }
+  };
+  //save
+  const handleSave = async (updatedUser: User) => {
+    try {
+      await updateUser(updatedUser);
+      setUsersState((prev) =>
+        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+      );
+      setEditingUser(null);
+    } catch (error) {
+      console.error("Update failed:", error);
+      alert("Không thể cập nhật user!");
+    }
   };
 
-  const handleEdit = (userId: number) => {
-    console.log("Edit user:", userId);
-  };
-
-  const handleSave = async (user: User) => {
-    await updateUser(user);
-    setUsersState((prev) =>
-      prev.map((u) => (u.id === user.id ? user : u))
-    );
-    setEditingUser(null);
-  };
+  if (loading) return <UserSkeleton />;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Users</h1>
-      <UserSkeleton />
-      
-      <Input
-        placeholder="Search by name or email..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
-      {paginatedUsers.length === 0 && (<div className="text-center text-gray-500 py-10">
-        No users found
-         </div> )}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Users Management</h1>
+        <Input
+          placeholder="Search by name or email..."
+          className="max-w-sm"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+        />
+      </div>
+
+      {paginatedUsers.length === 0 && (
+        <div className="text-center text-gray-500 py-10">No users found</div>
+      )}
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -133,7 +119,7 @@ export default function UsersPage() {
               className="cursor-pointer"
               onClick={() => {
                 setSortField("name");
-                setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
               }}
             >
               Name {sortField === "name" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
@@ -145,19 +131,17 @@ export default function UsersPage() {
 
         <TableBody>
           {paginatedUsers.map((user) => (
-            <TableRow key={user.id} className="text-gray-600">
+            <TableRow key={user.id}>
               <TableCell>{user.id}</TableCell>
               <TableCell>{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
-              <TableCell>{user.role}</TableCell>
+              <TableCell>
+                <span>{user.role || "USER"}</span>
+              </TableCell>
               <TableCell>
                 <UserActions
                   onEdit={() => setEditingUser(user)}
-                  onDelete={() =>
-                    setUsersState((prev) =>
-                      prev.filter((u) => u.id !== user.id)
-                    )
-                  }
+                  onDelete={() => handleDelete(user.id)}
                 />
               </TableCell>
             </TableRow>
@@ -165,24 +149,26 @@ export default function UsersPage() {
         </TableBody>
       </Table>
 
-
+          {/* page */}
       <div className="flex items-center gap-2 justify-end">
         <Button
           variant="outline"
-          disabled={page === 1}
+          size="sm"
           onClick={() => setPage((p) => p - 1)}
+          disabled={page === 1}
         >
           prev
         </Button>
 
-        <span className="text-sm">
-          Page {page} / {totalPage}
-        </span>
+        <div className="text-sm">
+          Page {page} of {totalPage}
+        </div>
 
         <Button
           variant="outline"
-          disabled={page === totalPage}
+          size="sm"
           onClick={() => setPage((p) => p + 1)}
+          disabled={page === totalPage}
         >
           Next
         </Button>

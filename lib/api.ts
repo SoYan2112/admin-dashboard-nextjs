@@ -1,5 +1,5 @@
 export async function getUsers() {
-  const res = await fetch("https://jsonplaceholder.typicode.com/admin/users", {
+  const res = await fetch("/api/users", {
     cache: "no-store",
   });
 
@@ -8,20 +8,19 @@ export async function getUsers() {
 }
 
 export async function updateUser(user: any) {
-  const res = await fetch(
-    `https://jsonplaceholder.typicode.com/admin/users/${user.id}`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(user),
-    }
-  );
+  const res = await fetch(`/api/users/${user.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(user),
+  });
 
+  if (!res.ok) throw new Error("Failed to update user");
   return res.json();
 }
 
 export async function deleteUser(id: number) {
-  await fetch(`https://jsonplaceholder.typicode.com/admin/users/${id}`, {
+  const res = await fetch(`/api/users/${id}`, {
     method: "DELETE",
   });
+  if (!res.ok) throw new Error("Failed to delete user");
 }

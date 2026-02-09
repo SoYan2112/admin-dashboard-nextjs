@@ -1,29 +1,38 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
 
 const createUserSchema = z.object({
   name: z.string().min(3),
   email: z.string().email(),
-  role: z.string().min(1),
+  // role: z.string().min(1),
 });
 
+// get users data from DB
+export async function GET() {
+  try {
+    const allUsers = await db.select().from(users);
+    return NextResponse.json(allUsers);
+  } catch (error) {
+    console.error("Drizzle GET error:", error);
+    return NextResponse.json({message: "DB Error"} , { status: 500});
+  }
+}
+
+// add user to DB
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const data = createUserSchema.parse(body);
 
-    if (data.email === "test@gmail.com") {
-      return NextResponse.json(
-        { fieldErrors: { email: "Email already exists" } },
-        { status: 400 }
-      );
-    }
+    const newUser = await db.insert(users).values({
+      name: data.name,
+      email: data.email
+    }).returning();
 
-    return NextResponse.json({
-      id: crypto.randomUUID(),
-      ...data,
-    });
-  } catch {
+    return NextResponse.json(newUser[0]);
+  } catch (error) {
     return NextResponse.json({ message: "Invalid data" }, { status: 400 });
   }
 }

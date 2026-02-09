@@ -1,6 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { count } from "drizzle-orm"
+import { db } from "@/lib/db"
+import { users } from "@/lib/db/schema"; 
+export default async function DashboardPage() {
 
-export default function DashboardPage() {
+  const [result] = await db.select({ value: count()}).from(users);
+  const totalUsers = result.value;
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Dashboard</h1>
@@ -10,7 +15,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Total Users</CardTitle>
           </CardHeader>
-          <CardContent className="text-3xl font-bold">120 </CardContent>
+          <CardContent className="text-3xl font-bold">{totalUsers} </CardContent>
         </Card>
 
         <Card>

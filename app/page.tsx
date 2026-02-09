@@ -6,7 +6,7 @@ export default function Home() {
     <main className="flex min-h-screen items-center justify-center">
       <Link href="/admin/dashboard" >
       <Button variant={"default"}>
-        Home page, click to redirect to dashboard
+        Home page, click to redirect to dashboard!
       </Button>
         </Link>
     </main>
