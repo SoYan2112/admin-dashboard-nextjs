@@ -13,7 +13,8 @@ import { EditUser, type User } from "@/components/EditUser";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserSkeleton } from "./user-skeleton";
-import { getUsers, updateUser, deleteUser } from "@/lib/api";
+import { getUsers, updateUser, deleteUser, createUser } from "@/lib/api";
+import { AddUser } from "@/components/AddUser";
 
 export default function UsersPage() {
   const [usersState, setUsersState] = useState<User[]>([]);
@@ -24,9 +25,9 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 5;
-  const [sortField, setSortField] = useState<"name" | "isAdmin" | null>("name");
+  const [sortField, setSortField] = useState<"id" | "name" | "isAdmin" | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-
+  const [isAddOpen, setIsAddOpen] = useState(false); // State mở modal add
   // fetch db
   useEffect(() => {
     async function loadUsers() {
@@ -71,10 +72,8 @@ export default function UsersPage() {
   // actions
   // delete
   const handleDelete = async (id: number) => {
-        
-      await deleteUser(id);
-      setUsersState((prev) => prev.filter((u) => u.id !== id));
-    
+    await deleteUser(id);
+    setUsersState((prev) => prev.filter((u) => u.id !== id));
   };
   //save
   const handleSave = async (updatedUser: User) => {
@@ -89,22 +88,39 @@ export default function UsersPage() {
       alert("Can not update user!");
     }
   };
+  // create
+  const handleCreate = async (newData: { name: string; email: string; isAdmin: boolean }) => {
+    try {
+      const newUser = await createUser(newData);
+      setUsersState((prev) => [newUser, ...prev]); // Thêm vào đầu danh sách
+    } catch (error: any) {
+      console.error("error: ", error);
+
+      alert(`${error.message}`);
+    }
+  };
 
   if (loading) return <UserSkeleton />;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="justify-between items-center space-y-5">
         <h1 className="text-2xl font-bold">Users Management</h1>
-        <Input
-          placeholder="Search by name or email..."
-          className="max-w-sm"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
+        <div className="md:flex space-y-2 md:space-y-0 justify-between">
+          <Button className="px-5" onClick={() => setIsAddOpen(true)}>
+            Add new user
+          </Button>
+
+          <Input
+            placeholder="Search by name or email..."
+            className="max-w-3xs"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
       </div>
 
       {paginatedUsers.length === 0 && (
@@ -124,15 +140,17 @@ export default function UsersPage() {
             >
               Name {sortField === "name" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
             </TableHead>
-            
+
             <TableHead>Email</TableHead>
-            <TableHead 
-                className="cursor-pointer"
-                onClick={() => {
-                    setSortField("isAdmin");
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                }}
-            >Role {sortField === "isAdmin" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
+            <TableHead
+              className="cursor-pointer"
+              onClick={() => {
+                setSortField("isAdmin");
+                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+              }}
+            >
+              Role{" "}
+              {sortField === "isAdmin" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -185,7 +203,11 @@ export default function UsersPage() {
           Next
         </Button>
       </div>
-
+      <AddUser
+        open={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+        onSave={handleCreate}
+      />
       <EditUser
         open={!!editingUser}
         users={editingUser}
