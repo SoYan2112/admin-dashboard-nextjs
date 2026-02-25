@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { count } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"; 
+import ActivityTimeline from "@/components/users/ActivityTimeline";
 
 export default async function DashboardPage() {
 
@@ -33,6 +34,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="text-3xl font-bold">2,430</CardContent>
         </Card>
+        <ActivityTimeline />
       </div>
     </div>
   );

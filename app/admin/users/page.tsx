@@ -13,9 +13,16 @@ import { EditUser, type User } from "@/components/users/EditUser";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserSkeleton } from "./user-skeleton";
-import { getUsers, updateUser, deleteUser, createUser } from "@/lib/api";
+import {
+  getUsers,
+  updateUser,
+  deleteUser,
+  createUser,
+} from "@/lib/api";
 import { AddUser } from "@/components/users/AddUser";
 import { toast } from "sonner";
+import { createLogAction } from "@/lib/action";
+
 export default function UsersPage() {
   const [usersState, setUsersState] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +82,18 @@ export default function UsersPage() {
   // actions
   // delete
   const handleDelete = async (id: number) => {
+    const userToDelete = usersState.find((u) => u.id === id);
+    if (!userToDelete) return;
+
     await deleteUser(id);
+    // ghi log
+    await createLogAction(
+      "DELETE",
+      "USER",
+      userToDelete.name,
+      `${userToDelete?.name} (${userToDelete?.email})  was deleted`,
+    );
+
     setUsersState((prev) => prev.filter((u) => u.id !== id));
     toast.success(`Delete user successfully!`);
   };
@@ -83,6 +101,7 @@ export default function UsersPage() {
   //save, edit
   const handleSave = async (updatedUser: User) => {
     const oldUser = usersState.find((u) => u.id === updatedUser.id);
+
     const hasChanges =
       oldUser?.name !== updatedUser.name ||
       oldUser?.email !== updatedUser.email ||
@@ -93,8 +112,18 @@ export default function UsersPage() {
       setEditingUser(null);
       return;
     }
+
     try {
       await updateUser(updatedUser);
+
+      // ghi log sau khi update thành công
+      await createLogAction(
+        "UPDATE",
+        "USER",
+        updatedUser.name,
+        `User: ${oldUser?.name} updated username to ${updatedUser.name}`,
+      );
+
       setUsersState((prev) =>
         prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
       );
@@ -113,6 +142,15 @@ export default function UsersPage() {
   }) => {
     try {
       const newUser = await createUser(newData);
+
+      await createLogAction(
+        "UPDATE",
+        "USER",
+        newUser.name,
+
+        `New account created: name: ${newUser.name} role: ${newUser.isAdmin ? "Admin" : "User"}`,
+      );
+
       setUsersState((prev) => [newUser, ...prev]);
       toast.success("Add new user successfully!");
     } catch (error: any) {
