@@ -1,6 +1,6 @@
 "use client";
 
-import UserForm, { UserFormData } from "@/components/user-form";
+import UserForm, { UserFormData } from "@/components/users/UserForm";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 

@@ -8,14 +8,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { UserActions } from "@/components/user-actions";
-import { EditUser, type User } from "@/components/EditUser";
+import { UserActions } from "@/components/users/UserAction";
+import { EditUser, type User } from "@/components/users/EditUser";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserSkeleton } from "./user-skeleton";
 import { getUsers, updateUser, deleteUser, createUser } from "@/lib/api";
-import { AddUser } from "@/components/AddUser";
-
+import { AddUser } from "@/components/users/AddUser";
+import { toast } from "sonner";
 export default function UsersPage() {
   const [usersState, setUsersState] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,9 +25,12 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 5;
-  const [sortField, setSortField] = useState<"id" | "name" | "isAdmin" | null>(null);
+  const [sortField, setSortField] = useState<"id" | "name" | "isAdmin" | null>(
+    null,
+  );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [isAddOpen, setIsAddOpen] = useState(false); // State mở modal add
+  const [isAddOpen, setIsAddOpen] = useState(false);
+
   // fetch db
   useEffect(() => {
     async function loadUsers() {
@@ -74,29 +77,46 @@ export default function UsersPage() {
   const handleDelete = async (id: number) => {
     await deleteUser(id);
     setUsersState((prev) => prev.filter((u) => u.id !== id));
+    toast.success(`Delete user successfully!`);
   };
-  //save
+
+  //save, edit
   const handleSave = async (updatedUser: User) => {
+    const oldUser = usersState.find((u) => u.id === updatedUser.id);
+    const hasChanges =
+      oldUser?.name !== updatedUser.name ||
+      oldUser?.email !== updatedUser.email ||
+      oldUser?.isAdmin !== updatedUser.isAdmin;
+
+    if (!hasChanges) {
+      toast.info("No changes detected");
+      setEditingUser(null);
+      return;
+    }
     try {
       await updateUser(updatedUser);
       setUsersState((prev) =>
         prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
       );
       setEditingUser(null);
-    } catch (error) {
-      console.error("Update failed:", error);
-      alert("Can not update user!");
+      toast.success("Updated successfully!");
+    } catch (error: any) {
+      toast.error(`Failed to update user: ${error.message}`);
     }
   };
+
   // create
-  const handleCreate = async (newData: { name: string; email: string; isAdmin: boolean }) => {
+  const handleCreate = async (newData: {
+    name: string;
+    email: string;
+    isAdmin: boolean;
+  }) => {
     try {
       const newUser = await createUser(newData);
-      setUsersState((prev) => [newUser, ...prev]); // Thêm vào đầu danh sách
+      setUsersState((prev) => [newUser, ...prev]);
+      toast.success("Add new user successfully!");
     } catch (error: any) {
-      console.error("error: ", error);
-
-      alert(`${error.message}`);
+      toast.error(`Failed to add new user: ${error.message}`);
     }
   };
 
@@ -123,85 +143,92 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {paginatedUsers.length === 0 && (
-        <div className="text-center text-gray-500 py-10">No users found</div>
-      )}
-
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead
-              className="cursor-pointer"
-              onClick={() => {
-                setSortField("name");
-                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-              }}
-            >
-              Name {sortField === "name" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
-            </TableHead>
-
-            <TableHead>Email</TableHead>
-            <TableHead
-              className="cursor-pointer"
-              onClick={() => {
-                setSortField("isAdmin");
-                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-              }}
-            >
-              Role{" "}
-              {sortField === "isAdmin" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {paginatedUsers.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell>{user.id}</TableCell>
-              <TableCell>{user.name}</TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs ${user.isAdmin ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
+      <div className="min-h-[350px] flex flex-col justify-between">
+        <div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setSortField("name");
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                  }}
                 >
-                  {user.isAdmin === true ? "Admin" : "User"}
-                </span>
-              </TableCell>
-              <TableCell>
-                <UserActions
-                  onEdit={() => setEditingUser(user)}
-                  onDelete={() => handleDelete(user.id)}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                  Name{" "}
+                  {sortField === "name" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
+                </TableHead>
 
-      {/* page */}
-      <div className="flex items-center gap-2 justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => p - 1)}
-          disabled={page === 1}
-        >
-          prev
-        </Button>
+                <TableHead>Email</TableHead>
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setSortField("isAdmin");
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                  }}
+                >
+                  Role{" "}
+                  {sortField === "isAdmin" &&
+                    (sortOrder === "asc" ? "⬆️" : "⬇️")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
 
-        <div className="text-sm">
-          Page {page} of {totalPage}
+            <TableBody>
+              {paginatedUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.id}</TableCell>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${user.isAdmin ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
+                    >
+                      {user.isAdmin === true ? "Admin" : "User"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <UserActions
+                      onEdit={() => setEditingUser(user)}
+                      onDelete={() => handleDelete(user.id)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {paginatedUsers.length === 0 && (
+            <div className="text-center text-gray-500 py-10">
+              No users found
+            </div>
+          )}
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((p) => p + 1)}
-          disabled={page === totalPage}
-        >
-          Next
-        </Button>
+        {/* page */}
+        <div className="flex items-center gap-2 justify-end  ">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => p - 1)}
+            disabled={page === 1}
+          >
+            Prev
+          </Button>
+
+          <div className="text-sm">
+            Page {page} of {totalPage}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page === totalPage}
+          >
+            Next
+          </Button>
+        </div>
       </div>
       <AddUser
         open={isAddOpen}

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { users } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { UserSchema } from "@/types/user";
+import { z } from "zod"
 
 export async function PUT(
   req: NextRequest,
@@ -10,16 +12,19 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const userId = Number(id);
+    const validatedData = UserSchema.parse(body);
 
     const updatedUser = await db
       .update(users)
-      .set({ name: body.name, email: body.email })
-      .where(eq(users.id, userId))
+      .set({ name: validatedData.name, email: validatedData.email, isAdmin: validatedData.isAdmin })
+      .where(eq(users.id, Number(id)))
       .returning();
 
     return NextResponse.json(updatedUser[0]);
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof z.ZodError){
+    return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
+    }
     return NextResponse.json({ message: "Update failed" }, { status: 500 });
   }
 }
