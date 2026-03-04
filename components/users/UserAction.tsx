@@ -19,12 +19,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 
 export function UserActions({
-  onEdit,
+  userId,
   onDelete,
 }: {
-  onEdit: () => void;
+  userId: number;
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -39,13 +40,23 @@ export function UserActions({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-red-600"
-            onClick={() => setOpen(true)}
-          >
-            Delete
-          </DropdownMenuItem>
+          <Link href={`/admin/users/${userId}`}>
+            <DropdownMenuItem className="cursor-pointer">
+              <span>View Detail</span>
+            </DropdownMenuItem>
+          </Link>
+          <Link href={`/admin/users/${userId}/edit`}>
+            <DropdownMenuItem className="cursor-pointer">
+              <span>Edit</span>
+            </DropdownMenuItem>
+          </Link>
+          
+            <DropdownMenuItem
+              className="text-red-600 cursor-pointer"
+              onClick={() => setOpen(true)}
+            >
+              Delete
+            </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -60,7 +71,9 @@ export function UserActions({
 
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600" onClick={onDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction className="bg-red-600" onClick={onDelete}>
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

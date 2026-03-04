@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { users } from "@/lib/db/schema";
 import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { UserSchema } from "@/types/user";
-import { z } from "zod"
+import { z } from "zod";
 
 export async function PUT(
   req: NextRequest,
@@ -13,19 +13,45 @@ export async function PUT(
     const { id } = await params;
     const body = await req.json();
     const validatedData = UserSchema.parse(body);
+    const userId = Number(id);
 
+    // check exit name
+    const existingName = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.name, validatedData.name), ne(users.id, userId)))
+      .limit(1);
+
+    if (existingName.length > 0) {
+      return NextResponse.json(
+        { message: "Name already exists." },
+        { status: 400 },
+      );
+    }
+
+    // update user
     const updatedUser = await db
       .update(users)
-      .set({ name: validatedData.name, email: validatedData.email, isAdmin: validatedData.isAdmin })
+      .set({
+        name: validatedData.name,
+        email: validatedData.email,
+        isAdmin: validatedData.isAdmin,
+      })
       .where(eq(users.id, Number(id)))
       .returning();
 
     return NextResponse.json(updatedUser[0]);
   } catch (error: any) {
-    if (error instanceof z.ZodError){
-    return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { message: error.issues[0].message },
+        { status: 400 },
+      );
     }
-    return NextResponse.json({ message: "Update failed" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Email alreay exists." },
+      { status: 500 },
+    );
   }
 }
 

@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { asc } from "drizzle-orm";
-
-const createUserSchema = z.object({
-  name: z.string().min(3),
-  email: z.string().email(),
-  isAdmin: z.boolean().optional()
-});
+import { asc, eq } from "drizzle-orm";
+import { UserSchema } from "@/types/user";
 
 // get users data from DB
 export async function GET() {
@@ -17,7 +11,7 @@ export async function GET() {
     return NextResponse.json(allUsers);
   } catch (error) {
     console.error("Drizzle GET error:", error);
-    return NextResponse.json({message: "DB Error"} , { status: 500});
+    return NextResponse.json({ message: "DB Error" }, { status: 500 });
   }
 }
 
@@ -25,17 +19,32 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const data = createUserSchema.parse(body);
+    const data = UserSchema.parse(body);
 
-    const newUser = await db.insert(users).values({
-      name: data.name,
-      email: data.email,
-      isAdmin: data.isAdmin
-    }).returning();
+    const existingName = await db
+      .select()
+      .from(users)
+      .where(eq(users.name, data.name))
+      .limit(1);
+
+    if (existingName.length > 0) {
+      return NextResponse.json(
+        { message: "Name already exists." },
+        { status: 400 },
+      );
+    }
+
+    const newUser = await db
+      .insert(users)
+      .values({
+        name: data.name,
+        email: data.email,
+        isAdmin: data.isAdmin,
+      })
+      .returning();
 
     return NextResponse.json(newUser[0]);
   } catch (error) {
-    return NextResponse.json({ message: "Invalid data" }, { status: 400 });
+    return NextResponse.json({ message: "Email already exists." }, { status: 400 });
   }
 }
-

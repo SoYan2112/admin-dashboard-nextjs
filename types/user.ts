@@ -1,7 +1,22 @@
 import { z } from "zod";
 
+const nameRegex = /^[a-zA-Z ]+$/
 export const UserSchema = z.object({
-  name: z.string().min(3, "Name too short"),
+  name: z.string().min(3, "Name too short").max(50, "Name is to long").regex(nameRegex, "Only letter allowed").transform((val) => val.trim().replace(/\s+/g, ' ')),
   email: z.string().email("Invalid email address"),
   isAdmin: z.boolean()
 });
+
+export const UpdateUserSchema = z.object({
+  id: z.string(),
+  name: z.string().min(3, "Name too short").max(50, "Name is to long").regex(nameRegex, "Only letter allowed").transform((val) => val.trim().replace(/\s+/g, ' ')),
+  email: z.string().email("Invalid email address"),
+  isAdmin: z.boolean()
+});
+
+export type User = {
+  id: number;
+  name: string;
+  email: string;
+  isAdmin: boolean;
+};

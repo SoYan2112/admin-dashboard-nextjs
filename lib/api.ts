@@ -1,3 +1,4 @@
+import { User } from "@/types/user";
 
 
 export async function getUsers() {
@@ -6,7 +7,8 @@ export async function getUsers() {
   });
 
   if (!res.ok) throw new Error("Failed to fetch users");
-  return res.json();
+  const list = await res.json();
+  return list as User[];
 }
 
 export async function updateUser(user: any) {
@@ -16,7 +18,12 @@ export async function updateUser(user: any) {
     body: JSON.stringify(user),
   });
 
-  if (!res.ok) throw new Error("Failed to update user");
+  
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message);
+  } 
+    
   return res.json();
 }
 
