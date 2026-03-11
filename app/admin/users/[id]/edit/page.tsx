@@ -2,13 +2,12 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getUsers, updateUser } from "@/lib/api";
+import { getUserById, updateUser } from "@/lib/api";
 import { createLogAction } from "@/lib/action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { UpdateUserSchema, User } from "@/types/user";
-import { log } from "console";
 
 export default function EditUserPage({
   params,
@@ -21,14 +20,17 @@ export default function EditUserPage({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getUsers().then((data) => {
-      const found = data.find((u) => u.id === parseInt(id));
-      setUser(found);
-    });
-  }, [id]);
-  
-
-  
+    getUserById(id)
+      .then((data) => {
+        setUser(data);
+      })
+      .catch((err) => {
+        toast.error("User not found!");
+        router.push("/admin/users");
+      });
+      
+    }, [id]);
+    
   if (!user) return <div className="p-10 text-center"></div>;
 
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -76,7 +78,7 @@ export default function EditUserPage({
       changes.length > 0
         ? toast.success("Updated successfully!")
         : toast.success("No changes");
-        
+
       router.push("/admin/users");
       router.refresh();
     } catch (error: any) {
@@ -86,7 +88,6 @@ export default function EditUserPage({
     }
   };
 
-  
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-xl shadow-sm border mt-10">
       <h1 className="text-2xl font-bold mb-6">Edit User</h1>

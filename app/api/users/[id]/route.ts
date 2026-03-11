@@ -41,15 +41,21 @@ export async function PUT(
       .returning();
 
     return NextResponse.json(updatedUser[0]);
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { message: error.issues[0].message },
         { status: 400 },
       );
     }
+    if (error?.code === '23505') {
+      return NextResponse.json(
+        { message: "Email already exists." },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
-      { message: "Email alreay exists." },
+      { message: "Internal server error" },
       { status: 500 },
     );
   }
@@ -69,4 +75,22 @@ export async function DELETE(
   } catch (error) {
     return NextResponse.json({ message: "Delete failed" }, { status: 500 });
   }
+}
+
+// fetch user GET
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, Number(id)))
+    .limit(1);
+
+  if (!user.length) {
+    return NextResponse.json({ message: "User not found" }, { status: 404 });
+  }
+  return NextResponse.json(user[0]);
 }

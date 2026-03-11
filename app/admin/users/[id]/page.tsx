@@ -24,6 +24,8 @@ export default function UserDetailsPage({
     });
   }, [id]);
 
+
+
   if (!user)
     return (
       <div className="p-10 text-center">

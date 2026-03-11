@@ -24,9 +24,6 @@ export async function createLogAction(action: string, entity: string, targetName
 
   if (isSuccess) {
     revalidatePath("/", "layout");
-
-    // revalidatePath("/admin/dashboard");
-    // revalidatePath("/admin/users");
     return { success: true };
   }
 }

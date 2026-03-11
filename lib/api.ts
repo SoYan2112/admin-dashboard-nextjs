@@ -11,7 +11,7 @@ export async function getUsers() {
   return list as User[];
 }
 
-export async function updateUser(user: any) {
+export async function updateUser(user: Pick<User, 'id' | 'name' | 'email' | 'isAdmin'>) {
   const res = await fetch(`/api/users/${user.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -48,4 +48,13 @@ export async function createUser(userData: { name: string; email: string; isAdmi
   }
 
   return res.json();
+}
+
+// get user by ID
+export async function getUserById(id: string) {
+    const res = await fetch(`/api/users/${id}`);
+    if (!res.ok){
+        throw new Error("Failed to fetch user");
+    }
+    return res.json();
 }
