@@ -41,7 +41,7 @@ export default function UserDetailsPage({
           <span
             className={`px-2 py-1 rounded-full text-xs ${user.isAdmin ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
           >
-            {user.isAdmin === true ? "Admin" : "User"}
+            {user.isAdmin ? "Admin" : "User"}
           </span>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -59,14 +59,14 @@ export default function UserDetailsPage({
           </div>
           <div className="flex justify-end gap-2">
             <Button
-              className="w-15 "
+              className="w-[60px] "
               variant="outline"
               onClick={() => router.push("/admin/users")}
             >
               Back
             </Button>
             <Button
-              className="w-15 "
+              className="w-[60px] "
               onClick={() => router.push(`/admin/users/${id}/edit`)}
             >
               Edit

@@ -12,6 +12,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
+
     const validatedData = UserSchema.parse(body);
     const userId = Number(id);
 
@@ -25,7 +26,7 @@ export async function PUT(
     if (existingName.length > 0) {
       return NextResponse.json(
         { message: "Name already exists." },
-        { status: 400 },
+        { status: 409 },
       );
     }
 
@@ -37,18 +38,30 @@ export async function PUT(
         email: validatedData.email,
         isAdmin: validatedData.isAdmin,
       })
-      .where(eq(users.id, Number(id)))
+      .where(eq(users.id, userId))
       .returning();
 
+    if (updatedUser.length === 0) {
+      return NextResponse.json(
+        {
+          message: "User not found",
+        },
+        { status: 404 },
+      );
+    }
+
     return NextResponse.json(updatedUser[0]);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { message: error.issues[0].message },
         { status: 400 },
       );
     }
-    if (error?.code === '23505') {
+    if (
+      error.code === "23505" ||
+      error.message?.includes("inique constraint")
+    ) {
       return NextResponse.json(
         { message: "Email already exists." },
         { status: 409 },

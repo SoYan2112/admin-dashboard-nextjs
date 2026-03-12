@@ -29,7 +29,7 @@ export async function createLogAction(action: string, entity: string, targetName
 }
 
 export async function getLogsAction() {
-  unstable_noStore();
+  cache: 'no-store'
   try {
     const logs = await db
       .select()
@@ -38,7 +38,7 @@ export async function getLogsAction() {
       .limit(10);
     return logs;
   } catch (error) {
-    console.error("Lỗi lấy logs:", error);
+    console.error("Failed activity log", error);
     return [];
   }
 }

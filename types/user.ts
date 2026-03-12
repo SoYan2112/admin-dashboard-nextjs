@@ -6,10 +6,10 @@ export const UserSchema = z.object({
   name: z
     .string()
     .min(3, "Name too short")
-    .max(50, "Name is to long")
-    .regex(nameRegex, "Only letter allowed")
+    .max(50, "Name is too long")
+    .regex(nameRegex, "Name only allow letters and space!")
     .transform((val) => val.trim().replace(/\s+/g, " ")),
-  email: z.string().email("Invalid email address"),
+  email: z.string().email("Invalid email address!"),
   isAdmin: z.boolean(),
 });
 
