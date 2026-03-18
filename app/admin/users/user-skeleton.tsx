@@ -3,7 +3,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 
 
 
-export function TableRowSkeleton({ rows = 5 }: { rows?: number }) {
+export function TableRowSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <>
       {[...Array(rows)].map((_, i) => (
@@ -44,8 +44,8 @@ export function FormCardSkeleton () {
           </div>
         ))}
         <div className="flex justify-end gap-2 pt-4">
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 w-24" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-24" />
         </div>
       </div>
     </div>

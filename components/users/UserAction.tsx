@@ -17,25 +17,57 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { MoreHorizontal, Loader2 } from "lucide-react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { deleteUser } from "@/lib/api";
+import { createLogAction } from "@/lib/action";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export function UserActions({
   userId,
-  onDelete,
+  userName,
 }: {
   userId: number;
-  onDelete: () => void;
+  userName: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  const handleConfirmDelete = () => {
+    startTransition(async () => {
+      try {
+        await deleteUser(userId);
+
+        await createLogAction(
+          "DELETE",
+          "USER",
+          userName,
+          `Deleted user ${userName} (ID: ${userId})`,
+        );
+
+        toast.success("User deleted successfully");
+        setOpen(false);
+
+        router.refresh();
+      } catch (error) {
+        toast.error("Failed to delete user");
+      }
+    });
+  };
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <MoreHorizontal size={18} />
+          <Button variant="ghost" size="icon" disabled={isPending}>
+            {isPending ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              <MoreHorizontal size={18} />
+            )}
           </Button>
         </DropdownMenuTrigger>
 
@@ -50,13 +82,13 @@ export function UserActions({
               <span>Edit</span>
             </DropdownMenuItem>
           </Link>
-          
-            <DropdownMenuItem
-              className="text-red-600 cursor-pointer"
-              onClick={() => setOpen(true)}
-            >
-              Delete
-            </DropdownMenuItem>
+
+          <DropdownMenuItem
+            className="text-red-600 cursor-pointer"
+            onClick={() => setOpen(true)}
+          >
+            Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -65,14 +97,22 @@ export function UserActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone.
+              This action cannot be undone. This will permanently delete{" "}
+              <strong>{userName}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600" onClick={onDelete}>
-              Delete
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
+              disabled={isPending}
+            >
+              {isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

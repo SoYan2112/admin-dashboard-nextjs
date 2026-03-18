@@ -17,9 +17,7 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>Total Users</CardTitle>
           </CardHeader>
-          <CardContent className="text-3xl font-bold">
-            {totalUsers}{" "}
-          </CardContent>
+          <CardContent className="text-3xl font-bold">{totalUsers}</CardContent>
         </Card>
 
         <Card>

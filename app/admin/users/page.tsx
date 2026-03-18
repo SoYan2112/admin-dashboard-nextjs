@@ -1,5 +1,3 @@
-"use client";
-import { use, useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -9,225 +7,209 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserActions } from "@/components/users/UserAction";
-import { User } from "@/types/user";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { TableRowSkeleton } from "./user-skeleton";
-import { getUsers, updateUser, deleteUser, createUser } from "@/lib/api";
-import { toast } from "sonner";
-import { createLogAction } from "@/lib/action";
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
 import Link from "next/link";
+import { SearchInput } from "./search-input";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { asc } from "drizzle-orm";
 
-export default function UsersPage() {
-  const [usersState, setUsersState] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+// Định nghĩa Type cho SearchParams
+type Order = "asc" | "desc";
+type SortField = "id" | "name" | "isAdmin";
 
-  // State search, sort, page
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+interface PageProps {
+  searchParams: Promise<{
+    search?: string;
+    page?: string;
+    sort?: SortField;
+    order?: Order;
+  }>;
+}
+
+export default async function UsersPage({ searchParams }: PageProps) {
+  // 1. Lấy dữ liệu từ URL params
+  const { search, page, sort, order } = await searchParams;
+
+  const currentSearch = search || "";
+  const currentPage = Number(page) || 1;
+  const currentSortField: SortField = sort || "id";
+  const currentOrder: Order = order || "asc";
   const pageSize = 10;
-  const [sortField, setSortField] = useState<"id" | "name" | "isAdmin" | null>(
-    null,
-  );
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+  const allUsers = await db.select().from(users).orderBy(asc(users.id));
 
-  // fetch db
-  useEffect(() => {
-    async function loadUsers() {
-      setLoading(true);
-      try {
-        const data = await getUsers();
-        setUsersState(data);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Failed to fetch users";
-        console.error(message);
-        toast.error(message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadUsers();
-  }, []);
-
-  // filter & sort
-  const filteredUsers = usersState.filter(
+  const filteredUsers = allUsers.filter(
     (u) =>
-      u.name?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email?.toLowerCase().includes(search.toLowerCase()),
+      u.name?.toLowerCase().includes(currentSearch.toLowerCase()) ||
+      u.email?.toLowerCase().includes(currentSearch.toLowerCase()),
   );
 
-  const sortedUsers = [...filteredUsers].sort((a, b) => {
-    if (!sortField) return 0;
+  var sortedUsers = filteredUsers;
 
-    const valA = String(a[sortField] || "");
-    const valB = String(b[sortField] || "");
+  if (sort == "name") {
+    sortedUsers = [...filteredUsers].sort((a, b) => {
+      const valA = String(a[currentSortField] || "");
+      const valB = String(b[currentSortField] || "");
+      return currentOrder === "asc"
+        ? valA.localeCompare(valB)
+        : valB.localeCompare(valA);
+    });
+  }
 
-    return sortOrder === "asc"
-      ? valA.localeCompare(valB)
-      : valB.localeCompare(valA);
-  });
-
-  // page
   const totalPage = Math.ceil(filteredUsers.length / pageSize) || 1;
   const paginatedUsers = sortedUsers.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
   );
 
-  // actions
-  // delete
-  const handleDelete = async (id: number) => {
-    const userToDelete = usersState.find((u) => u.id === id);
-    if (!userToDelete) return;
-
-    try {
-      await deleteUser(id);
-
-      startTransition(async () => {
-        await createLogAction(
-          "DELETE",
-          "USER",
-          userToDelete.name,
-          `${userToDelete?.name} (${userToDelete?.email})  was deleted`,
-        );
-        router.refresh();
-      });
-
-      // ghi log
-      setUsersState((prev) => prev.filter((u) => u.id !== id));
-      toast.success(`Delete user successfully!`);
-    } catch (error) {
-      toast.error("Delete failed");
-    }
-  };
-
   return (
-    <div className="space-y-6 overflow-hidden">
+    <div className="space-y-6">
+      {/* Header & Search */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Users Management</h1>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Link href="/admin/users/create" className="w-full sm:w-auto">
-            <Button className="w-full">Add new user</Button>
+          <Link href="/admin/users/create">
+            <Button className="w-full sm:w-auto">Add new user</Button>
           </Link>
-
-          <Input
-            placeholder="Search by name or email..."
-            className="w-full sm:max-w-xs"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            disabled={loading}
-          />
+          <SearchInput defaultValue={currentSearch} />
         </div>
       </div>
 
-      <div className="border rounded-md bg-white">
-        <div className="overflow-x-auto shadow-sm">
-          <Table className="min-w-[700px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]">ID</TableHead>
-                <TableHead
-                  className="cursor-pointer w-[250px]"
-                  onClick={() => {
-                    setSortField("name");
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                  }}
-                >
-                  Name{" "}
-                  {sortField === "name" && (sortOrder === "asc" ? "⬆️" : "⬇️")}
-                </TableHead>
-
-                <TableHead className="w-[300px]">Email</TableHead>
-                <TableHead
-                  className="cursor-pointer w-[120px]"
-                  onClick={() => {
-                    setSortField("isAdmin");
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                  }}
-                >
-                  Role{" "}
-                  {sortField === "isAdmin" &&
-                    (sortOrder === "asc" ? "⬆️" : "⬇️")}
-                </TableHead>
-
-                <TableHead className="w-[120px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {loading ? (
-                <TableRowSkeleton rows={10} />
-              ) : (
-                paginatedUsers.map((user) => (
+      {/* Table Section */}
+      <div className="min-h-[600px]">
+        <div className="border rounded-md bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <Table className="min-w-[700px] table-fixed">
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-[80px]">ID</TableHead>
+                  <TableHead className="w-[250px]">
+                    <SortLink
+                      label="Name"
+                      field="name"
+                      current={currentSortField}
+                      order={currentOrder}
+                      search={currentSearch}
+                    />
+                  </TableHead>
+                  <TableHead className="w-[300px]">Email</TableHead>
+                  <TableHead className="w-[120px]">
+                    <SortLink
+                      label="Role"
+                      field="isAdmin"
+                      current={currentSortField}
+                      order={currentOrder}
+                      search={currentSearch}
+                    />
+                  </TableHead>
+                  <TableHead className="w-[120px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.id}</TableCell>
-
-                    <TableCell>
-                      <Link href={`/admin/users/${user.id}`}>{user.name}</Link>
-                    </TableCell>
-
-                    <TableCell className="w-[100px]">{user.email}</TableCell>
+                    <Link href={`/admin/users/${user.id}`}>
+                      <TableCell className="font-medium cursor-pointer">
+                        {user.name}
+                      </TableCell>
+                    </Link>
+                    <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <span
-                        className={`px-2 py-1 rounded-full text-xs ${user.isAdmin ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
+                        className={`block rounded md:rounded-lg w-20 text-xs py-2 text-center ${user.isAdmin ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
                       >
-                        {user.isAdmin === true ? "Admin" : "User"}
+                        {user.isAdmin ? "Admin" : "User"}
                       </span>
                     </TableCell>
                     <TableCell>
                       <UserActions
                         userId={user.id}
-                        onDelete={() => handleDelete(user.id)}
+                        userName={user.name || ""}
                       />
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          {paginatedUsers.length === 0 && (
-            <div className="text-center text-gray-500 py-10">
-              No users found
-            </div>
-          )}
+                ))}
+              </TableBody>
+            </Table>
+
+            {paginatedUsers.length === 0 && (
+              <div className="flex items-center justify-center h-[400px] text-muted-foreground">
+                No users found
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* page */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 justify-between mt-4 text-gray-500 ">
-        <p className="text-sm text-muted-foreground">
-          Page {page} of {totalPage}
+      {/* Pagination Footer */}
+      <div>
+        <p className="text-muted-foreground absolute">
+          {currentPage} / {totalPage}
         </p>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => p - 1)}
-            disabled={page === 1}
+        <div className="flex justify-center gap-2 ">
+          <Link
+            href={
+              currentPage > 1
+                ? `?page=${currentPage - 1}&search=${currentSearch}&sort=${currentSortField}&order=${currentOrder}`
+                : "#"
+            }
           >
-            Prev
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page === totalPage}
+            <Button
+              className="w-20"
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+            >
+              Previous
+            </Button>
+          </Link>
+          <Link
+            href={
+              currentPage < totalPage
+                ? `?page=${currentPage + 1}&search=${currentSearch}&sort=${currentSortField}&order=${currentOrder}`
+                : "#"
+            }
+            scroll={false}
           >
-            Next
-          </Button>
+            <Button
+              className="w-20"
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPage}
+            >
+              Next
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
+  );
+}
+
+// Helper component cho việc Sort (Server side)
+function SortLink({
+  label,
+  field,
+  current,
+  order,
+  search,
+}: {
+  label: string;
+  field: SortField;
+  current: SortField;
+  order: Order;
+  search: string;
+}) {
+  const isCurrent = current === field;
+  const nextOrder = isCurrent && order === "asc" ? "desc" : "asc";
+  return (
+    <Link
+      href={`?sort=${field}&order=${nextOrder}&search=${search}`}
+      className="flex items-center gap-1 cursor-pointer"
+    >
+      {label} {isCurrent && (order === "asc" ? "⬆️" : "⬇️")}
+    </Link>
   );
 }

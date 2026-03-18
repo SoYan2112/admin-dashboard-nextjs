@@ -17,7 +17,6 @@ export function AdminSidebar() {
 
   return (
     <>
-      {/* Nút bấm Mobile (Chỉ hiện trên màn hình < md) */}
       <button
         className="md:hidden fixed top-4 left-4 z-50 p-2 bg-primary text-white rounded-md"
         onClick={() => setIsOpen(!isOpen)}
@@ -25,7 +24,6 @@ export function AdminSidebar() {
         {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* Overlay: Click ra ngoài để đóng sidebar trên mobile */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -33,7 +31,6 @@ export function AdminSidebar() {
         />
       )}
 
-      {/* Sidebar logic */}
       <aside
         className={clsx(
           "fixed md:sticky top-0 left-0 z-40 h-screen bg-white border-r transition-transform duration-300 w-64 p-4 space-y-2",
@@ -48,7 +45,7 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => setIsOpen(false)} // Click xong tự đóng trên mobile
+              onClick={() => setIsOpen(false)} 
               className={clsx(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium",
                 active

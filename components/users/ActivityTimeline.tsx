@@ -17,14 +17,13 @@ export default async function ActivityTimeline() {
         {logs.map((log) => (
           <div key={log.id} className="p-4 hover:bg-slate-50 transition-colors">
             <div className="flex justify-between items-start">
-              {/* LOGIC ĐỔI MÀU Ở ĐÂY */}
               <p
                 className={`font-bold uppercase text-[10px] tracking-widest px-2 py-0.5 rounded border ${
                   log.action === "DELETE"
                     ? "text-red-600 bg-red-50 border-red-100"
                     : log.action === "UPDATE"
                       ? "text-blue-600 bg-blue-50 border-blue-100"
-                      : "text-green-600 bg-green-50 border-green-100" // Cho trường hợp CREATE
+                      : "text-green-600 bg-green-50 border-green-100" 
                 }`}
               >
                 {log.action}
